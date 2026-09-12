@@ -3,6 +3,7 @@ package com.egjarabo.agenteia.rag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +23,14 @@ public class DocumentoService {
   }
 
   public List<String> buscar(String consulta) {
-    List<Document> resultados = vectorStore.similaritySearch("search_query: " + consulta);
-    resultados.forEach(
-        doc ->
-            log.info(
-                "Score: {} | Texto: {}",
-                doc.getScore(),
-                doc.getText().substring(0, Math.min(50, doc.getText().length()))));
+    SearchRequest request =
+        SearchRequest.builder()
+            .query("search_query: " + consulta)
+            .topK(2)
+            .similarityThreshold(0.25)
+            .build();
+
+    List<Document> resultados = vectorStore.similaritySearch(request);
     return resultados.stream()
         .map(doc -> doc.getText().replaceFirst("^search_document: ", ""))
         .toList();

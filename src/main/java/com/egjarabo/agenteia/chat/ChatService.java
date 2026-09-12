@@ -3,6 +3,8 @@ package com.egjarabo.agenteia.chat;
 import com.egjarabo.agenteia.inventario.ConsultaStockResponse;
 import com.egjarabo.agenteia.inventario.InventarioTools;
 import com.egjarabo.agenteia.rag.DocumentoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +13,8 @@ public class ChatService {
 
   private final ChatClient chatClient;
   private final DocumentoService documentoService;
+
+  private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
 
   public ChatService(
       ChatClient.Builder builder,
@@ -23,13 +27,30 @@ public class ChatService {
 
   public String responder(String mensaje) {
     String contexto = documentoService.buscarComoContexto(mensaje);
+    logger.info("Contexto recuperado para [{}]: {}", mensaje, contexto);
 
     return chatClient
         .prompt()
         .system(
-            "Usa el siguiente contexto de la documentación interna si es relevante para responder. "
-                + "Si el contexto no tiene relación con la pregunta, ignóralo y responde con tus herramientas o tu conocimiento general.\n\n"
-                + "Contexto:\n"
+            """
+        Eres el asistente interno de la empresa para consultas de RRHH e inventario.
+
+        REGLA DE PRIORIDAD: si el "Contexto de documentación interna" de abajo contiene
+        información relevante para la pregunta, respóndela usando ese contexto — sin
+        importar de qué tema general trate (RRHH, legislación, políticas, etc.).
+        Solo si el contexto NO cubre la pregunta, entonces di explícitamente:
+        "No tengo información interna sobre esto, te recomiendo consultarlo con RRHH."
+
+        No respondas con conocimiento general propio sobre temas que no estén en el
+        contexto ni cubiertos por tus herramientas — no inventes ni completes.
+
+        Usa siempre las herramientas disponibles para datos de stock, precios o cálculos;
+        nunca calcules manualmente si existe una herramienta para ello.
+
+        Responde de forma breve y profesional.
+
+        Contexto de documentación interna:
+        """
                 + contexto)
         .user(mensaje)
         .call()
