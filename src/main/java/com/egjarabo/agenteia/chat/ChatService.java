@@ -6,6 +6,9 @@ import com.egjarabo.agenteia.rag.DocumentoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.model.tool.ToolCallLimitBehavior;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +24,21 @@ public class ChatService {
       HoraTools horaTools,
       InventarioTools inventarioTools,
       DocumentoService documentoService) {
-    this.chatClient = builder.defaultTools(horaTools, inventarioTools).build();
+
+    ToolCallingManager toolCallingManager =
+        ToolCallingManager.builder()
+            .maxTotalToolCalls(5)
+            .onLimitExceeded(ToolCallLimitBehavior.THROW)
+            .build();
+
+    ToolCallingAdvisor toolCallingAdvisor =
+        ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build();
+
+    this.chatClient =
+        builder
+            .defaultTools(horaTools, inventarioTools)
+            .defaultAdvisors(toolCallingAdvisor)
+            .build();
     this.documentoService = documentoService;
   }
 
