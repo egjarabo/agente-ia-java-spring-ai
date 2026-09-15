@@ -7,6 +7,9 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 @Configuration
 @RequiredArgsConstructor
@@ -15,6 +18,18 @@ public class RagConfig {
   @Bean
   public VectorStore vectorStore(EmbeddingModel embeddingModel) {
     return SimpleVectorStore.builder(embeddingModel).build();
+  }
+
+  @Bean
+  public RestClient.Builder restClientBuilder() {
+    return RestClient.builder()
+        .requestFactory(
+            new org.springframework.http.client.SimpleClientHttpRequestFactory() {
+              {
+                setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
+                setReadTimeout((int) Duration.ofSeconds(45).toMillis());
+              }
+            });
   }
 
   @Bean

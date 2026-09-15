@@ -26,13 +26,14 @@ public class ChatService {
   }
 
   public String responder(String mensaje) {
-    String contexto = documentoService.buscarComoContexto(mensaje);
-    logger.info("Contexto recuperado para [{}]: {}", mensaje, contexto);
+    try {
+      String contexto = documentoService.buscarComoContexto(mensaje);
+      logger.info("Contexto recuperado para [{}]: {}", mensaje, contexto);
 
-    return chatClient
-        .prompt()
-        .system(
-            """
+      return chatClient
+          .prompt()
+          .system(
+              """
         Eres el asistente interno de la empresa para consultas de RRHH e inventario.
 
         REGLA DE PRIORIDAD: si el "Contexto de documentación interna" de abajo contiene
@@ -51,10 +52,14 @@ public class ChatService {
 
         Contexto de documentación interna:
         """
-                + contexto)
-        .user(mensaje)
-        .call()
-        .content();
+                  + contexto)
+          .user(mensaje)
+          .call()
+          .content();
+    } catch (Exception e) {
+      logger.error("Error al procesar la pregunta [{}]: {}", mensaje, e.getMessage());
+      return "Lo siento, ha ocurrido un problema al procesar tu pregunta. Inténtalo de nuevo en unos momentos.";
+    }
   }
 
   public ConsultaStockResponse responderEstructurado(String mensaje) {
